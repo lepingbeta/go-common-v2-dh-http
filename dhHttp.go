@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-06-02 11:51:27
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-06-02 12:18:57
+ * @LastEditTime : 2024-06-02 14:58:39
  * @FilePath     : /v2/go-common-v2-dh-http/dhHttp.go
  * @Description  :
  *
@@ -74,6 +74,14 @@ func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 }
 
 func PostJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
+	return ReqJSON2Map("POST", url, data)
+}
+
+func PutJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
+	return ReqJSON2Map("PUT", url, data)
+}
+
+func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]interface{}, error) {
 	// 将数据编码为JSON格式
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -84,7 +92,7 @@ func PostJSON2Map(url string, data interface{}) (map[string]interface{}, error) 
 	jsonBuffer := bytes.NewBuffer(jsonData)
 
 	// 创建一个请求
-	req, err := http.NewRequest("POST", url, jsonBuffer)
+	req, err := http.NewRequest(reqType, url, jsonBuffer)
 	if err != nil {
 		return nil, err
 	}
