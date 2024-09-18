@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	dhlog "github.com/lepingbeta/go-common-v2-dh-log"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 // PostJSON 发送一个包含JSON数据的POST请求
@@ -75,10 +76,18 @@ func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]in
 	// 根据请求类型决定是否需要将data编码为JSON格式
 	if reqType == "GET" {
 		// 将GET请求参数编码为查询字符串并添加到URL
-		if params, ok := data.(map[string]interface{}); ok {
+		params, ok1 := data.(map[string]interface{})
+		params, ok2 := data.(bson.M)
+		if ok1 || ok2 {
 			queryParams := url.Values{}
 			for key, value := range params {
-				queryParams.Add(key, value.(string))
+				// 确保 value 可以转换为 string
+				if strValue, ok := value.(string); ok {
+					queryParams.Add(key, strValue)
+				} else {
+					// 你可以决定是否跳过或处理非字符串类型的情况
+					dhlog.Error("Skipping non-string value for key: %s", key)
+				}
 			}
 			if strings.Contains(urlStr, "?") {
 				urlStr += "&" + queryParams.Encode()
@@ -86,6 +95,7 @@ func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]in
 				urlStr += "?" + queryParams.Encode()
 			}
 		}
+
 		req, err = http.NewRequest("GET", urlStr, nil)
 	} else {
 		// 对于非GET请求，将data编码为JSON格式
@@ -137,6 +147,6 @@ func PutJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
 }
 
 // GetJSON 发送一个GET请求并将响应体解码为map[string]interface{}。
-func GetJSON2Map(urlStr string, params map[string]interface{}) (map[string]interface{}, error) {
+func GetJSON2Map(urlStr string, params interface{}) (map[string]interface{}, error) {
 	return ReqJSON2Map("GET", urlStr, params)
 }
