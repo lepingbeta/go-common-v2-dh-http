@@ -2,8 +2,8 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-06-02 11:51:27
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-06-02 14:58:39
- * @FilePath     : /v2/go-common-v2-dh-http/dhHttp.go
+ * @LastEditTime : 2024-09-11 08:05:31
+ * @FilePath     : /apibot-api/data/mycode/dahe/go-common/v2/go-common-v2-dh-http/dhHttp.go
  * @Description  :
  *
  * Copyright (c) 2024 by 大合前研, All Rights Reserved.
@@ -13,8 +13,10 @@ package dhHttp
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
+
+	dhlog "github.com/lepingbeta/go-common-v2-dh-log"
 )
 
 // PostJSON 发送一个包含JSON数据的POST请求
@@ -56,7 +58,8 @@ func PostJSON(url string, data interface{}) (*http.Response, error) {
 // ResponseToMap 尝试将HTTP响应体解码为map[string]interface{}。
 func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 	// 读取响应体
-	respBody, err := ioutil.ReadAll(resp.Body)
+	// respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +110,7 @@ func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]inter
 		return nil, err
 	}
 
+	dhlog.Info("resp.StatusCode: %v", resp.StatusCode)
 	// 检查响应状态码
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()
