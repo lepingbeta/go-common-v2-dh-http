@@ -1,8 +1,8 @@
 /*
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-06-02 11:51:27
- * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-06-02 12:25:24
+ * @LastEditors: Symphony zhangleping@cezhiqiu.com
+ * @LastEditTime: 2024-09-19 05:25:52
  * @FilePath     : /v2/go-common-v2-dh-http/dhHttp_test.go
  * @Description  :
  *
@@ -66,4 +66,47 @@ func TestPostJSON2Map(t *testing.T) {
 	dhlog.DebugAny(resp["status"])
 	d := resp["data"].(map[string]any)
 	dhlog.DebugAny(d["access_token"].(string))
+}
+
+func TestGetJSON2Map(t *testing.T) {
+	// // 创建一个模拟的HTTP服务器
+	// mockResponse := `{"message": "success", "data": {"id": 123, "name": "test"}}`
+	// server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 	// 检查是否是GET请求
+	// 	if r.Method != http.MethodGet {
+	// 		t.Errorf("Expected GET request, got %s", r.Method)
+	// 	}
+	// 	// 设置响应头
+	// 	w.Header().Set("Content-Type", "application/json")
+	// 	// 写入模拟的JSON响应
+	// 	w.Write([]byte(mockResponse))
+	// }))
+	// defer server.Close()
+
+	// 调用GetJSON函数
+	url := `http://192.168.31.11:32880/ApiDefinition/testGetJson?apiId=yyyzz`
+	result, err := GetJSON2Map(url)
+	dhlog.DebugAny(result)
+	dhlog.DebugAny(err)
+	// if err != nil {
+	// 	t.Fatalf("GetJSON failed: %v", err)
+	// }
+
+	// // 检查响应中的数据
+	// if result["message"] != "success" {
+	// 	t.Errorf("Expected message to be 'success', got '%v'", result["message"])
+	// }
+
+	// data, ok := result["data"].(map[string]interface{})
+	// if !ok {
+	// 	t.Fatalf("Expected data to be a map, got %T", result["data"])
+	// }
+
+	// if data["id"] != float64(123) { // JSON unmarshals numbers as float64
+	// 	t.Errorf("Expected id to be 123, got %v", data["id"])
+	// }
+
+	// if data["name"] != "test" {
+	// 	t.Errorf("Expected name to be 'test', got '%v'", data["name"])
+	// }
 }

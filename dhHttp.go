@@ -1,13 +1,3 @@
-/*
- * @Author       : Symphony zhangleping@cezhiqiu.com
- * @Date         : 2024-06-02 11:51:27
- * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-09-11 08:05:31
- * @FilePath     : /apibot-api/data/mycode/dahe/go-common/v2/go-common-v2-dh-http/dhHttp.go
- * @Description  :
- *
- * Copyright (c) 2024 by 大合前研, All Rights Reserved.
- */
 package dhHttp
 
 import (
@@ -58,7 +48,6 @@ func PostJSON(url string, data interface{}) (*http.Response, error) {
 // ResponseToMap 尝试将HTTP响应体解码为map[string]interface{}。
 func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 	// 读取响应体
-	// respBody, err := ioutil.ReadAll(resp.Body)
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -76,32 +65,35 @@ func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 	return m, nil
 }
 
-func PostJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
-	return ReqJSON2Map("POST", url, data)
-}
-
-func PutJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
-	return ReqJSON2Map("PUT", url, data)
-}
-
+// ReqJSON2Map 发送一个包含JSON数据的HTTP请求并将响应体解码为map[string]interface{}。
 func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]interface{}, error) {
-	// 将数据编码为JSON格式
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
+	var req *http.Request
+	var err error
+
+	// 根据请求类型决定是否需要将data编码为JSON格式
+	if reqType == "GET" {
+		// GET 请求不需要请求体
+		req, err = http.NewRequest("GET", url, nil)
+	} else {
+		// 对于非GET请求，将data编码为JSON格式
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+
+		// 创建一个包含JSON数据的缓冲区
+		jsonBuffer := bytes.NewBuffer(jsonData)
+		req, err = http.NewRequest(reqType, url, jsonBuffer)
 	}
 
-	// 创建一个包含JSON数据的缓冲区
-	jsonBuffer := bytes.NewBuffer(jsonData)
-
-	// 创建一个请求
-	req, err := http.NewRequest(reqType, url, jsonBuffer)
 	if err != nil {
 		return nil, err
 	}
 
 	// 设置请求头信息
-	req.Header.Set("Content-Type", "application/json")
+	if reqType != "GET" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	// 发送请求并获取响应
 	client := &http.Client{}
@@ -117,5 +109,21 @@ func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]inter
 		return nil, http.ErrBodyNotAllowed
 	}
 
+	// 将响应体解码为map[string]interface{}
 	return ResponseToMap(resp)
+}
+
+// PostJSON2Map 发送一个POST请求并将响应体解码为map[string]interface{}。
+func PostJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
+	return ReqJSON2Map("POST", url, data)
+}
+
+// PutJSON2Map 发送一个PUT请求并将响应体解码为map[string]interface{}。
+func PutJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
+	return ReqJSON2Map("PUT", url, data)
+}
+
+// GetJSON 发送一个GET请求并将响应体解码为map[string]interface{}。
+func GetJSON2Map(url string) (map[string]interface{}, error) {
+	return ReqJSON2Map("GET", url, nil)
 }
