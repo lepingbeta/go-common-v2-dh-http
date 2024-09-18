@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-06-02 11:51:27
  * @LastEditors: Symphony zhangleping@cezhiqiu.com
- * @LastEditTime: 2024-09-19 05:25:52
+ * @LastEditTime: 2024-09-19 05:31:43
  * @FilePath     : /v2/go-common-v2-dh-http/dhHttp_test.go
  * @Description  :
  *
@@ -85,7 +85,10 @@ func TestGetJSON2Map(t *testing.T) {
 
 	// 调用GetJSON函数
 	url := `http://192.168.31.11:32880/ApiDefinition/testGetJson?apiId=yyyzz`
-	result, err := GetJSON2Map(url)
+	params := map[string]interface{}{
+		"apiId": "yyyzz11",
+	}
+	result, err := GetJSON2Map(url, params)
 	dhlog.DebugAny(result)
 	dhlog.DebugAny(err)
 	// if err != nil {

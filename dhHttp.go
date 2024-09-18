@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 
 	dhlog "github.com/lepingbeta/go-common-v2-dh-log"
 )
@@ -66,14 +68,25 @@ func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 }
 
 // ReqJSON2Map 发送一个包含JSON数据的HTTP请求并将响应体解码为map[string]interface{}。
-func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]interface{}, error) {
+func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]interface{}, error) {
 	var req *http.Request
 	var err error
 
 	// 根据请求类型决定是否需要将data编码为JSON格式
 	if reqType == "GET" {
-		// GET 请求不需要请求体
-		req, err = http.NewRequest("GET", url, nil)
+		// 将GET请求参数编码为查询字符串并添加到URL
+		if params, ok := data.(map[string]interface{}); ok {
+			queryParams := url.Values{}
+			for key, value := range params {
+				queryParams.Add(key, value.(string))
+			}
+			if strings.Contains(urlStr, "?") {
+				urlStr += "&" + queryParams.Encode()
+			} else {
+				urlStr += "?" + queryParams.Encode()
+			}
+		}
+		req, err = http.NewRequest("GET", urlStr, nil)
 	} else {
 		// 对于非GET请求，将data编码为JSON格式
 		jsonData, err := json.Marshal(data)
@@ -83,7 +96,7 @@ func ReqJSON2Map(reqType string, url string, data interface{}) (map[string]inter
 
 		// 创建一个包含JSON数据的缓冲区
 		jsonBuffer := bytes.NewBuffer(jsonData)
-		req, err = http.NewRequest(reqType, url, jsonBuffer)
+		req, err = http.NewRequest(reqType, urlStr, jsonBuffer)
 	}
 
 	if err != nil {
@@ -124,6 +137,6 @@ func PutJSON2Map(url string, data interface{}) (map[string]interface{}, error) {
 }
 
 // GetJSON 发送一个GET请求并将响应体解码为map[string]interface{}。
-func GetJSON2Map(url string) (map[string]interface{}, error) {
-	return ReqJSON2Map("GET", url, nil)
+func GetJSON2Map(urlStr string, params map[string]interface{}) (map[string]interface{}, error) {
+	return ReqJSON2Map("GET", urlStr, params)
 }
