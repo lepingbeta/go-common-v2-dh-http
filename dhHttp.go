@@ -3,6 +3,7 @@ package dhHttp
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -72,23 +73,54 @@ func ResponseToMap(resp *http.Response) (map[string]interface{}, error) {
 func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]interface{}, error) {
 	var req *http.Request
 	var err error
+	var bearerToken string // 用于临时存储提取的Token
 
-	// 根据请求类型决定是否需要将data编码为JSON格式
+	// 提取Bearer Token的逻辑
+	extractBearerToken := func() {
+		// 尝试从map或bson.M类型中提取bearerToken
+		if params, ok := data.(map[string]interface{}); ok {
+			if tokenVal, exists := params["bearerToken"]; exists {
+				if tokenStr, ok := tokenVal.(string); ok {
+					bearerToken = tokenStr
+					delete(params, "bearerToken") // 删除键避免出现在请求中
+				}
+			}
+		} else if params, ok := data.(bson.M); ok {
+			if tokenVal, exists := params["bearerToken"]; exists {
+				if tokenStr, ok := tokenVal.(string); ok {
+					bearerToken = tokenStr
+					delete(params, "bearerToken") // 删除键避免出现在请求中
+				}
+			}
+		}
+	}
+
+	// GET请求处理
 	if reqType == "GET" {
-		// 将GET请求参数编码为查询字符串并添加到URL
+		// 先提取可能的Token
+		extractBearerToken()
+
+		// 处理请求参数
 		params, ok1 := data.(map[string]interface{})
-		params, ok2 := data.(bson.M)
+		params2, ok2 := data.(bson.M)
+		var queryParams url.Values
+
 		if ok1 || ok2 {
-			queryParams := url.Values{}
-			for key, value := range params {
-				// 确保 value 可以转换为 string
+			queryParams = url.Values{}
+			var source map[string]interface{}
+			if ok1 {
+				source = params
+			} else {
+				source = params2
+			}
+			for key, value := range source {
 				if strValue, ok := value.(string); ok {
 					queryParams.Add(key, strValue)
 				} else {
-					// 你可以决定是否跳过或处理非字符串类型的情况
 					dhlog.Error("Skipping non-string value for key: %s", key)
 				}
 			}
+			// 构造带参数的URL
 			if strings.Contains(urlStr, "?") {
 				urlStr += "&" + queryParams.Encode()
 			} else {
@@ -96,15 +128,21 @@ func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]in
 			}
 		}
 
+		// 创建请求
 		req, err = http.NewRequest("GET", urlStr, nil)
+
+		// 非GET请求处理
 	} else {
-		// 对于非GET请求，将data编码为JSON格式
+		// 先提取可能的Token
+		extractBearerToken()
+
+		// 序列化JSON（已删除bearerToken的data）
 		jsonData, err := json.Marshal(data)
 		if err != nil {
 			return nil, err
 		}
 
-		// 创建一个包含JSON数据的缓冲区
+		// 创建请求
 		jsonBuffer := bytes.NewBuffer(jsonData)
 		req, err = http.NewRequest(reqType, urlStr, jsonBuffer)
 	}
@@ -113,26 +151,30 @@ func ReqJSON2Map(reqType string, urlStr string, data interface{}) (map[string]in
 		return nil, err
 	}
 
-	// 设置请求头信息
+	// 设置Authorization头（如果存在Token）
+	if bearerToken != "" {
+		req.Header.Set("Authorization", "Bearer "+bearerToken)
+	}
+
+	// 设置Content-Type
 	if reqType != "GET" {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	// 发送请求并获取响应
+	// 发送请求
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	dhlog.Info("resp.StatusCode: %v", resp.StatusCode)
-	// 检查响应状态码
+	// 检查状态码
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		resp.Body.Close()
-		return nil, http.ErrBodyNotAllowed
+		return nil, fmt.Errorf("请求失败，状态码: %d", resp.StatusCode)
 	}
 
-	// 将响应体解码为map[string]interface{}
+	// 解析响应
 	return ResponseToMap(resp)
 }
 

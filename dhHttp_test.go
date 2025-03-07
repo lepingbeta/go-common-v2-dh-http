@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-06-02 11:51:27
  * @LastEditors: Symphony zhangleping@cezhiqiu.com
- * @LastEditTime: 2024-09-19 05:31:43
+ * @LastEditTime: 2025-03-07 14:27:26
  * @FilePath     : /v2/go-common-v2-dh-http/dhHttp_test.go
  * @Description  :
  *
@@ -112,4 +112,24 @@ func TestGetJSON2Map(t *testing.T) {
 	// if data["name"] != "test" {
 	// 	t.Errorf("Expected name to be 'test', got '%v'", data["name"])
 	// }
+}
+
+func TestPostJSON2MapWithBearer(t *testing.T) {
+	// 定义要POST的URL
+	url := "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+
+	// 定义要发送的数据
+	data := map[string]interface{}{
+		"model":       "ep-20250228090136-kzqjj",
+		"messages":    []interface{}{map[string]string{"role": "user", "content": "你好"}},
+		"bearerToken": "c1ae5365-a0c4-4333-aa92-b3b2f7b23f7e",
+	}
+
+	// 发送POST请求
+	resp, err := PostJSON2Map(url, data)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dhlog.DebugAny(resp)
 }
